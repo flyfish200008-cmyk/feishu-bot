@@ -150,6 +150,7 @@ async def webhook(request: Request):
 
         print(f"收到飞书事件: {data.get('header', {}).get('event_type', 'unknown')}")
         print(f"完整请求体: {json.dumps(data, ensure_ascii=False)}")
+
         # 处理飞书URL验证
         if "challenge" in data:
             print(f"处理URL验证: challenge={data['challenge']}")
