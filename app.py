@@ -149,8 +149,7 @@ async def webhook(request: Request):
         data = await request.json()
 
         print(f"收到飞书事件: {data.get('header', {}).get('event_type', 'unknown')}")
-# 在这一行下面，添加第144行：
-print(f"完整请求体: {json.dumps(data, ensure_ascii=False)}")
+        print(f"完整请求体: {json.dumps(data, ensure_ascii=False)}")
         # 处理飞书URL验证
         if "challenge" in data:
             print(f"处理URL验证: challenge={data['challenge']}")
