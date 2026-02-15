@@ -142,4 +142,57 @@ async def webhook(request: Request):
         # 处理消息事件
         header = data.get("header", {})
         event_type = header.get("event_type", "")
-        print(f"📌
+        print(f"📌 事件类型: {event_type}")
+
+        if event_type == "im.message.receive_v1":
+            print("✅ 收到消息事件")
+            event = data.get("event", {})
+            message = event.get("message", {})
+            content = json.loads(message.get("content", "{}"))
+            chat_id = message.get("chat_id", "")
+            print(f"📍 Chat ID: {chat_id}")
+
+            # 获取消息文本
+            text = content.get("text", "")
+            print(f"📝 消息文本: {text}")
+
+            # 检查是否@机器人
+            if "@_user_" in text:
+                print("✅ 检测到@机器人")
+                # 提取IP定位方向
+                ip_direction = extract_ip_direction(text)
+                print(f"🎯 提取的IP方向: {ip_direction}")
+
+                # 调用工作流API
+                print("🔄 调用工作流API...")
+                result = call_workflow_api(ip_direction)
+                print(f"📊 工作流API返回: {json.dumps(result, ensure_ascii=False, indent=2)}")
+
+                # 格式化回复
+                reply = format_reply_message(result)
+                print(f"💬 格式化后的回复: {reply[:200]}...")
+
+                # 发送回复
+                print("📤 发送回复到飞书...")
+                send_result = send_feishu_message(chat_id, reply)
+                print(f"✅ 飞书消息发送结果: {json.dumps(send_result, ensure_ascii=False, indent=2)}")
+
+                return {"code": 0, "msg": "success"}
+            else:
+                print("❌ 未检测到@机器人，忽略消息")
+
+        print("⚠️  事件类型不匹配，忽略")
+        return {"code": 0, "msg": "ignored"}
+
+    except Exception as e:
+        print("=" * 50)
+        print(f"❌ 发生错误: {e}")
+        import traceback
+        traceback.print_exc()
+        print("=" * 50)
+        return JSONResponse(status_code=500, content={"code": -1, "msg": str(e)})
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)
