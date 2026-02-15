@@ -13,6 +13,9 @@ import hmac
 
 app = FastAPI()
 
+# 去重缓存：记录已处理的event_id
+processed_event_ids = set()
+
 # 配置
 WORKFLOW_API_URL = "https://xqzxthj2vk.coze.site/run"
 WORKFLOW_API_TOKEN = os.getenv("WORKFLOW_API_TOKEN", "Y77BCTP7KJ7RN32AMFCQQYEPPM3JNYRA")
@@ -120,7 +123,7 @@ def format_reply_message(result):
 @app.get("/health")
 async def health_check():
     """健康检查"""
-    return {"status": "ok"}
+    return {"status": "ok", "app_id": FEISHU_APP_ID, "workflow_api": WORKFLOW_API_URL}
 
 
 @app.post("/webhook")
@@ -138,6 +141,19 @@ async def webhook(request: Request):
         if "challenge" in data:
             print("✅ 飞书URL验证请求")
             return {"challenge": data["challenge"]}
+
+        # 获取event_id用于去重
+        event_id = data.get("header", {}).get("event_id", "")
+        
+        # 去重：如果event_id已处理过，直接返回
+        if event_id and event_id in processed_event_ids:
+            print(f"⚠️  事件 {event_id} 已处理过，跳过")
+            return {"code": 0, "msg": "ignored (duplicate)"}
+        
+        # 记录已处理的event_id
+        if event_id:
+            processed_event_ids.add(event_id)
+            print(f"🆔 记录event_id: {event_id}")
 
         # 处理消息事件
         header = data.get("header", {})
